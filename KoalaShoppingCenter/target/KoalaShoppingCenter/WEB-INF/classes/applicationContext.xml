@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop" xmlns:cache="http://www.springframework.org/schema/cache"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+<!--spring的配置文件-->
+    <!--扫描业务逻辑组件-->
+    <context:component-scan base-package="com.netease">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"></context:exclude-filter>
+    </context:component-scan>
+    <!--引入外部配置文件-->
+    <context:property-placeholder location="classpath:db.properties"></context:property-placeholder>
+    <!--dbcp数据库连接池-->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="url" value="${jdbc.jdbcUrl}"></property>
+        <property name="driverClassName" value="${jdbc.driverClass}"></property>
+        <property name="username" value="${jdbc.user}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+
+    <!--配置和mybatis的整合-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--制定mybatis全局配sqlSessionFactory置文件位置-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <!--配置数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--指定mybatis mapping配置文件的位置-->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"></property>
+
+    </bean>
+
+    <!--配置扫描器，定义MapperBean-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--扫描所有dao接口的实现加入到ioc容器中-->
+        <property name="basePackage" value="com.netease.dao"></property>
+    </bean>
+
+    <!--事务控制的配置(事务管理器)-->
+    <bean id="transactionManagerr" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--控制住数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManagerr" proxy-target-class="true"/>
+
+    <!--批量执行清空购物车中的商品-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"></constructor-arg>
+        <constructor-arg name="executorType" value="BATCH"></constructor-arg>
+    </bean>
+
+    <!--    &lt;!&ndash;使用xml配置形式的事务&ndash;&gt;
+        <aop:config>
+            &lt;!&ndash;切入点表达式&ndash;&gt;
+            <aop:pointcut id="txPoint" expression="execution(* com.netease.dao.*(..))"/>    &lt;!&ndash;切入service包下的所有方法&ndash;&gt;
+            &lt;!&ndash;配置事务增强&ndash;&gt;
+            <aop:advisor advice-ref="txAdvice" pointcut-ref="txPoint"/>
+
+        </aop:config>
+
+        &lt;!&ndash;配置事务增强，事务如何切入&ndash;&gt;
+        <tx:advice id="txAdvice" transaction-manager="transactionManagerr">
+            <tx:attributes>
+                &lt;!&ndash;所有方法都是事务方法&ndash;&gt;
+                <tx:method name="*"/>
+                <tx:method name="get*" read-only="true"/>
+            </tx:attributes>
+        </tx:advice>
+
+        &lt;!&ndash;开启基于注解的事务&ndash;&gt;-->
+</beans>

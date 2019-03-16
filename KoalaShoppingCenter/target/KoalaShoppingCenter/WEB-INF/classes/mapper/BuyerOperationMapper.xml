@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.dao.BuyerOperationMapper">
+
+    <resultMap id="shoppingCartResult" type="com.netease.meta.CartItem">
+        <id property="commodityID" column="commodityID"/>
+        <id property="buyerID" column="userID"/>
+        <result property="title" column="title"/>
+        <result property="amount" column="amount"/>
+        <result property="currentPrice" column="currentPrice"/>
+    </resultMap>
+
+    <resultMap id="financeResult" type="com.netease.meta.FinanceItem">
+        <id property="commodityID" column="commodityID"/>
+        <id property="buyerID" column="userID"/>
+        <result property="title" column="title"/>
+        <result property="picture" column="picture"/>
+        <result property="purchaseTime" column="purchaseTime" jdbcType="TIMESTAMP"/>
+        <result property="amount" column="amount"/>
+        <result property="boughtPrice" column="boughtPrice"/>
+        <result property="currentPrice" column="currentPrice"/>
+        <result property="abstractMsg" column="abstractMsg"/>
+        <result property="text" column="text"/>
+    </resultMap>
+
+    <select id="queryAllCommoditys"  resultType="commodity">
+      SELECT * FROM  commodity
+    </select>
+
+    <insert id="insertToShoppingCart" parameterType="cartItem">
+      insert into shoppingcart values (#{commodityID,jdbcType=INTEGER}, #{amount,jdbcType=INTEGER},
+       #{buyerID,jdbcType=TINYINT});
+    </insert>
+    
+    <delete id="deleteShoppingCartItem" parameterType="int">
+      delete from shoppingcart where commodityID = #{commodityID};
+    </delete>
+
+    <delete id="deleteShoppingCart" parameterType="int">
+      delete from shoppingcart where userID = #{userID};
+    </delete>
+    
+    <update id="updateCountForCartItem">
+      update shoppingcart set amount = amount + #{amount} WHERE commodityID = #{commodityID};
+    </update>
+
+    <select id="queryShoppingCartCommodity" parameterType="int" resultMap="shoppingCartResult">
+      SELECT t.*,c.title,c.currentPrice FROM `shoppingcart` t, commodity c WHERE t.commodityID = c.commodityID
+    </select>
+
+    <select id="querySCItem" parameterType="int" resultType="int">
+      SELECT COUNT(*) FROM `shoppingcart` WHERE commodityID = #{commodityID};
+    </select>
+
+    <insert id="insertIntoFinance" parameterType="financeItem">
+      insert into finance VALUES (#{buyerID,jdbcType=TINYINT} ,#{commodityID,jdbcType=INTEGER},
+       #{boughtPrice,jdbcType=DECIMAL},#{amount,jdbcType=INTEGER},NOW());
+    </insert>
+
+    <select id="queryPurchasedCommoditys" parameterType="int" resultMap="financeResult">
+      SELECT t.*,c.title,c.picture FROM `finance` t, commodity c WHERE t.commodityID = c.commodityID;
+    </select>
+
+    <select id="queryAllCommodityWithStatus" resultMap="financeResult">
+      SELECT c.commodityID,c.currentPrice,c.title,c.abstractMsg,c.text,c.picture, f.userID,f.boughtPrice,
+      f.amount,f.purchaseTime from commodity c LEFT JOIN finance f on c.commodityID = f.commodityID;
+    </select>
+
+    <select id="queryUnPurchasedCommoditys" parameterType="int" resultType="financeItem">
+      SELECT c.* FROM commodity c WHERE NOT EXISTS (SELECT f.commodityID from finance f WHERE f.commodityID = c.commodityID AND f.userID=1 )
+    </select>
+
+    <update id="updateCountForCommodity">
+      update commodity set soldAmount = soldAmount + #{soldAmount} WHERE commodityID = #{commodityID};
+    </update>
+
+    <select id="queryCommodityInfo" parameterType="int" resultMap="financeResult">
+      SELECT c.commodityID,c.currentPrice,c.title,c.abstractMsg,c.text,c.picture, f.userID,f.boughtPrice,
+      f.amount from commodity c LEFT JOIN finance f on (c.commodityID = f.commodityID) WHERE c.commodityID = #{commodityID};
+    </select>
+
+
+
+</mapper>
